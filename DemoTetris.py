@@ -17,6 +17,7 @@ SHAPES = [
     ("J", ("#...", "###.", "....", "...."), "#5685e8"),
     ("L", ("..#.", "###.", "....", "...."), "#f29b4b"),
 ]
+MASCOTS = ("germ", "drop")
 
 
 def rotate_clockwise(matrix):
@@ -85,14 +86,23 @@ class TetrisGame:
         self.paused = False
         self.game_over = False
         self.next_piece = random.choice(SHAPES)
+        self.next_mascot = random.choice(MASCOTS)
         self.spawn_piece()
         self.draw()
         self.schedule_tick()
 
     def spawn_piece(self):
         name, matrix, color = self.next_piece
-        self.current = {"name": name, "matrix": matrix, "color": color, "x": 3, "y": 0}
+        self.current = {
+            "name": name,
+            "matrix": matrix,
+            "color": color,
+            "mascot": self.next_mascot,
+            "x": 3,
+            "y": 0,
+        }
         self.next_piece = random.choice(SHAPES)
+        self.next_mascot = random.choice(MASCOTS)
         if not self.is_valid(self.current["matrix"], self.current["x"], self.current["y"]):
             self.game_over = True
 
@@ -140,7 +150,7 @@ class TetrisGame:
                     if board_y < 0:
                         self.game_over = True
                         return
-                    self.board[board_y][board_x] = self.current["color"]
+                    self.board[board_y][board_x] = (self.current["color"], self.current["mascot"])
 
         remaining_rows = [row for row in self.board if any(cell is None for cell in row)]
         cleared = BOARD_HEIGHT - len(remaining_rows)
@@ -192,15 +202,86 @@ class TetrisGame:
             self.draw()
         self.schedule_tick()
 
-    def draw_cell(self, canvas, x, y, color, size=CELL_SIZE):
+    def draw_cell(self, canvas, x, y, color, size=CELL_SIZE, mascot=None):
         padding = 2
+        left = x * size + padding
+        top = y * size + padding
         canvas.create_rectangle(
-            x * size + padding,
-            y * size + padding,
+            left,
+            top,
             (x + 1) * size - padding,
             (y + 1) * size - padding,
             fill=color,
             outline="",
+        )
+        if mascot is not None:
+            self.draw_mascot(canvas, left, top, size - padding * 2, mascot)
+
+    def draw_mascot(self, canvas, left, top, size, mascot):
+        center_x = left + size / 2
+        center_y = top + size / 2
+        stroke = max(1, size // 12)
+
+        if mascot == "germ":
+            for dx, dy in ((-0.35, -0.95), (0.35, -0.95), (0.95, -0.35), (0.95, 0.35),
+                           (0.35, 0.95), (-0.35, 0.95), (-0.95, 0.35), (-0.95, -0.35)):
+                canvas.create_line(
+                    center_x + dx * size * 0.24,
+                    center_y + dy * size * 0.24,
+                    center_x + dx * size * 0.38,
+                    center_y + dy * size * 0.38,
+                    fill="#315b35",
+                    width=stroke,
+                )
+            canvas.create_oval(
+                center_x - size * 0.29,
+                center_y - size * 0.29,
+                center_x + size * 0.29,
+                center_y + size * 0.29,
+                fill="#a8e879",
+                outline="#315b35",
+                width=stroke,
+            )
+        else:
+            canvas.create_polygon(
+                center_x,
+                top + size * 0.08,
+                left + size * 0.84,
+                top + size * 0.54,
+                center_x + size * 0.26,
+                top + size * 0.86,
+                center_x,
+                top + size * 0.94,
+                center_x - size * 0.26,
+                top + size * 0.86,
+                left + size * 0.16,
+                top + size * 0.54,
+                fill="#a8e9f2",
+                outline="#286777",
+                width=stroke,
+            )
+
+        eye_y = center_y - size * 0.04
+        eye_radius = max(1, size * 0.055)
+        for eye_x in (center_x - size * 0.11, center_x + size * 0.11):
+            canvas.create_oval(
+                eye_x - eye_radius,
+                eye_y - eye_radius,
+                eye_x + eye_radius,
+                eye_y + eye_radius,
+                fill="#18202b",
+                outline="",
+            )
+        canvas.create_arc(
+            center_x - size * 0.13,
+            center_y - size * 0.02,
+            center_x + size * 0.13,
+            center_y + size * 0.19,
+            start=200,
+            extent=140,
+            style=tk.ARC,
+            outline="#315b35" if mascot == "germ" else "#286777",
+            width=stroke,
         )
 
     def draw(self):
@@ -210,9 +291,10 @@ class TetrisGame:
         self.level_var.set(str(self.level))
 
         for row_index, row in enumerate(self.board):
-            for column_index, color in enumerate(row):
-                if color:
-                    self.draw_cell(self.board_canvas, column_index, row_index, color)
+            for column_index, cell in enumerate(row):
+                if cell is not None:
+                    color, mascot = cell
+                    self.draw_cell(self.board_canvas, column_index, row_index, color, mascot=mascot)
 
         for column in range(BOARD_WIDTH + 1):
             x = column * CELL_SIZE
@@ -243,7 +325,13 @@ class TetrisGame:
             for column_index, cell in enumerate(row):
                 board_y = y + row_index
                 if cell == "#" and board_y >= 0:
-                    self.draw_cell(self.board_canvas, piece["x"] + column_index, board_y, color)
+                    self.draw_cell(
+                        self.board_canvas,
+                        piece["x"] + column_index,
+                        board_y,
+                        color,
+                        mascot=None if ghost else piece["mascot"],
+                    )
 
     def draw_next_piece(self):
         self.next_canvas.delete("all")
@@ -252,14 +340,17 @@ class TetrisGame:
         for row_index, row in enumerate(matrix):
             for column_index, cell in enumerate(row):
                 if cell == "#":
+                    left = 16 + column_index * size
+                    top = 6 + row_index * size
                     self.next_canvas.create_rectangle(
-                        16 + column_index * size,
-                        6 + row_index * size,
-                        16 + (column_index + 1) * size - 3,
-                        6 + (row_index + 1) * size - 3,
+                        left,
+                        top,
+                        left + size - 3,
+                        top + size - 3,
                         fill=color,
                         outline="",
                     )
+                    self.draw_mascot(self.next_canvas, left, top, size - 3, self.next_mascot)
 
 
 if __name__ == "__main__":
