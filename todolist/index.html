@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fb">
+    <meta name="description" content="오늘 할 일을 간편하게 기록하고 관리하는 투두리스트입니다.">
+    <title>오늘의 할 일 | Todo List</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <p class="eyebrow">MY DAILY SPACE</p>
+        <h1>오늘의 할 일<span aria-hidden="true">.</span></h1>
+        <p class="page-description">작은 한 걸음부터, 차근차근 해내봐요.</p>
+      </header>
+
+      <section class="todo-card" aria-labelledby="list-heading">
+        <form class="add-form" id="add-form">
+          <label class="sr-only" for="new-task">새 할 일</label>
+          <input
+            id="new-task"
+            name="task"
+            type="text"
+            placeholder="새로운 할 일을 입력하세요"
+            autocomplete="off"
+            aria-describedby="input-hint"
+            required
+          >
+          <button class="add-button" type="submit">
+            <span aria-hidden="true">+</span>
+            <span>추가</span>
+          </button>
+          <p class="input-hint" id="input-hint">Enter 키를 눌러 빠르게 추가할 수 있어요.</p>
+        </form>
+
+        <p class="storage-notice" id="storage-notice" role="status" aria-live="polite" hidden></p>
+
+        <div class="list-heading-row">
+          <div>
+            <h2 id="list-heading">내 할 일</h2>
+            <p class="remaining-count" id="remaining-count">남은 할 일이 없습니다</p>
+          </div>
+          <button class="text-button clear-button" id="clear-completed" type="button" disabled>
+            완료 항목 지우기
+          </button>
+        </div>
+
+        <nav class="filters" aria-label="할 일 필터">
+          <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true">전체</button>
+          <button class="filter-button" type="button" data-filter="active" aria-pressed="false">진행 중</button>
+          <button class="filter-button" type="button" data-filter="completed" aria-pressed="false">완료</button>
+        </nav>
+
+        <ul class="todo-list" id="todo-list" aria-label="할 일 목록"></ul>
+
+        <div class="empty-state" id="empty-state">
+          <span class="empty-icon" aria-hidden="true">✦</span>
+          <p class="empty-title" id="empty-title">아직 할 일이 없어요</p>
+          <p class="empty-description" id="empty-description">위 입력창에 오늘 할 일을 추가해 보세요.</p>
+        </div>
+
+        <footer class="card-footer">
+          <span class="footer-mark" aria-hidden="true">✳</span>
+          <p>오늘도 충분히 잘하고 있어요.</p>
+        </footer>
+      </section>
+
+      <p class="page-footer">나만의 작은 성취를 기록해 보세요</p>
+    </main>
+  </body>
+</html>
